@@ -260,19 +260,24 @@ export default function AvatarDropdown() {
                               key={voucher.voucherId}
                               className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800"
                             >
-                              <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center justify-between mb-1.5">
                                 <p className="text-sm font-semibold text-primary-700 dark:text-primary-300">
                                   {voucher.code}
                                 </p>
-                                {voucher.discountPercentage ? (
-                                  <span className="text-xs font-medium text-primary-600 dark:text-primary-400">
-                                    -{voucher.discountPercentage}%
-                                  </span>
-                                ) : voucher.discountAmount ? (
-                                  <span className="text-xs font-medium text-primary-600 dark:text-primary-400">
-                                    -{voucher.discountAmount.toLocaleString()}đ
-                                  </span>
-                                ) : null}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {voucher.discountPercentage && voucher.discountPercentage > 0 && (
+                                    <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-bold rounded">
+                                      -{voucher.discountPercentage}%
+                                    </span>
+                                  )}
+                                  {voucher.discountAmount && voucher.discountAmount > 0 && (
+                                    <span className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs font-medium rounded whitespace-nowrap">
+                                      {voucher.discountPercentage && voucher.discountPercentage > 0
+                                        ? `tối đa ${voucher.discountAmount.toLocaleString()} ₫`
+                                        : `-${voucher.discountAmount.toLocaleString()} ₫`}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               {voucher.description && (
                                 <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-1">

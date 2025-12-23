@@ -10,22 +10,37 @@ interface Voucher {
   code: string;
   type: "percentage" | "amount";
   value: number;
+  discountPercentage?: number;
+  discountAmount?: number;
   description: string;
   endDate: string;
   condotelName?: string;
 }
 const VoucherCard: React.FC<{ voucher: Voucher }> = ({ voucher }) => {
-  const isPercentage = voucher.type === "percentage";
+  const hasPercentage = voucher.discountPercentage && voucher.discountPercentage > 0;
+  const hasAmount = voucher.discountAmount && voucher.discountAmount > 0;
+  
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col transition-transform hover:scale-105">
       <div className="p-5 flex-grow">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xl font-bold text-gray-800 tracking-wider bg-gray-100 px-3 py-1 rounded">
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-xl font-bold text-gray-800 tracking-wider bg-gray-100 px-3 py-1.5 rounded-lg">
             {voucher.code}
           </span>
-          <span className="text-xl font-semibold text-blue-600">
-            {isPercentage ? `Giảm ${voucher.value}%` : `Giảm ${voucher.value.toLocaleString("vi-VN")} VNĐ`}
-          </span>
+          <div className="flex flex-col items-end gap-1.5">
+            {hasPercentage && (
+              <span className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-lg font-bold rounded-lg">
+                Giảm {voucher.discountPercentage}%
+              </span>
+            )}
+            {hasAmount && voucher.discountAmount && (
+              <span className="px-2.5 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm font-medium rounded-md whitespace-nowrap">
+                {hasPercentage 
+                  ? `Tối đa ${voucher.discountAmount.toLocaleString("vi-VN")} ₫`
+                  : `Giảm ${voucher.discountAmount.toLocaleString("vi-VN")} ₫`}
+              </span>
+            )}
+          </div>
         </div>
         <p className="text-sm text-gray-600 mb-4 h-12">{voucher.description}</p>
         <p className="text-sm text-red-600 font-medium">
@@ -104,14 +119,29 @@ const PageMyVouchers = () => {
         // Map VoucherDTO sang Voucher format cho component
         const mappedVouchers: Voucher[] = activeVouchers.map((v: VoucherDTO) => {
           const condotelName = (v as any).condotelName;
+          const hasPercentage = v.discountPercentage && v.discountPercentage > 0;
+          const hasAmount = v.discountAmount && v.discountAmount > 0;
+          
+          // Tạo description dựa trên cả hai loại discount
+          let description = v.description;
+          if (!description) {
+            if (hasPercentage && hasAmount && v.discountAmount) {
+              description = `Giảm ${v.discountPercentage}% (tối đa ${v.discountAmount.toLocaleString()} đ) cho ${condotelName ? `condotel ${condotelName}` : 'tất cả condotel'}.`;
+            } else if (hasPercentage) {
+              description = `Giảm ${v.discountPercentage}% cho ${condotelName ? `condotel ${condotelName}` : 'tất cả condotel'}.`;
+            } else if (hasAmount && v.discountAmount) {
+              description = `Giảm ${v.discountAmount.toLocaleString()} đ cho ${condotelName ? `condotel ${condotelName}` : 'tất cả condotel'}.`;
+            }
+          }
+          
           return {
             id: v.voucherId.toString(),
             code: v.code,
-            type: v.discountPercentage ? "percentage" : "amount",
+            type: hasPercentage ? "percentage" : "amount",
             value: v.discountPercentage || v.discountAmount || 0,
-            description: v.description || (v.discountPercentage 
-              ? `Giảm ${v.discountPercentage}% cho ${condotelName ? `condotel ${condotelName}` : 'tất cả condotel'}.`
-              : `Giảm ${(v.discountAmount || 0).toLocaleString()} đ cho ${condotelName ? `condotel ${condotelName}` : 'tất cả condotel'}.`),
+            discountPercentage: v.discountPercentage,
+            discountAmount: v.discountAmount,
+            description: description || '',
             endDate: moment(v.endDate).format("DD/MM/YYYY"),
             condotelName: condotelName,
           };

@@ -1002,15 +1002,23 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
                 </div>
               )}
               {selectedVoucher && voucherDiscount > 0 && (
-                <div className="flex justify-between text-green-600 dark:text-green-400">
-                  <span>
-                    Giảm giá voucher {selectedVoucher.discountPercentage 
-                      ? `(${selectedVoucher.discountPercentage}%)`
-                      : selectedVoucher.discountAmount
-                      ? `(${selectedVoucher.discountAmount.toLocaleString()} đ)`
-                      : ""}
-                  </span>
-                  <span>-{voucherDiscount.toLocaleString()} đ</span>
+                <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span>Giảm giá voucher</span>
+                    {selectedVoucher.discountPercentage && selectedVoucher.discountPercentage > 0 && (
+                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded text-xs font-medium whitespace-nowrap">
+                        {selectedVoucher.discountPercentage}%
+                      </span>
+                    )}
+                    {selectedVoucher.discountAmount && selectedVoucher.discountAmount > 0 && (
+                      <span className="text-xs text-green-700 dark:text-green-300 whitespace-nowrap">
+                        {selectedVoucher.discountPercentage && selectedVoucher.discountPercentage > 0
+                          ? `(tối đa ${selectedVoucher.discountAmount.toLocaleString()} ₫)`
+                          : `(${selectedVoucher.discountAmount.toLocaleString()} ₫)`}
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-semibold whitespace-nowrap">-{voucherDiscount.toLocaleString()} ₫</span>
                 </div>
               )}
               {servicePackagesTotal > 0 && (
@@ -1165,7 +1173,7 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
             {getSelectedVoucher() && (
               <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <p className="font-semibold text-green-800 dark:text-green-200">
                       {getSelectedVoucher()?.code}
                     </p>
@@ -1174,6 +1182,28 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
                         {getSelectedVoucher()?.description}
                       </p>
                     )}
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      {(() => {
+                        const voucher = getSelectedVoucher();
+                        if (!voucher) return null;
+                        return (
+                          <>
+                            {voucher.discountPercentage && voucher.discountPercentage > 0 && (
+                              <span className="px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm font-bold rounded-md">
+                                Giảm {voucher.discountPercentage}%
+                              </span>
+                            )}
+                            {voucher.discountAmount && voucher.discountAmount > 0 && (
+                              <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-md whitespace-nowrap">
+                                {voucher.discountPercentage && voucher.discountPercentage > 0
+                                  ? `Tối đa ${voucher.discountAmount.toLocaleString()} ₫`
+                                  : `Giảm ${voucher.discountAmount.toLocaleString()} ₫`}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -1181,7 +1211,7 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
                       setSelectedVoucherCode(null);
                       setVoucherError(null);
                     }}
-                    className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                    className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 ml-4"
                   >
                     ✕
                   </button>
@@ -1214,15 +1244,20 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
                           <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
                             {voucher.code}
                           </span>
-                          {voucher.discountPercentage ? (
-                            <span className="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs font-semibold rounded">
-                              -{voucher.discountPercentage}%
-                            </span>
-                          ) : voucher.discountAmount ? (
-                            <span className="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs font-semibold rounded">
-                              -{voucher.discountAmount.toLocaleString()}đ
-                            </span>
-                          ) : null}
+                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            {voucher.discountPercentage && voucher.discountPercentage > 0 && (
+                              <span className="px-2.5 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs font-bold rounded-md">
+                                -{voucher.discountPercentage}%
+                              </span>
+                            )}
+                            {voucher.discountAmount && voucher.discountAmount > 0 && (
+                              <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium rounded-md whitespace-nowrap">
+                                {voucher.discountPercentage && voucher.discountPercentage > 0 
+                                  ? `tối đa ${voucher.discountAmount.toLocaleString()} ₫`
+                                  : `-${voucher.discountAmount.toLocaleString()} ₫`}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {voucher.description && (
                           <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-1">
@@ -1259,15 +1294,20 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
                           <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
                             {voucher.code}
                           </span>
-                          {voucher.discountPercentage ? (
-                            <span className="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs font-semibold rounded">
-                              -{voucher.discountPercentage}%
-                            </span>
-                          ) : voucher.discountAmount ? (
-                            <span className="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs font-semibold rounded">
-                              -{voucher.discountAmount.toLocaleString()}đ
-                            </span>
-                          ) : null}
+                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            {voucher.discountPercentage && voucher.discountPercentage > 0 && (
+                              <span className="px-2.5 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs font-bold rounded-md">
+                                -{voucher.discountPercentage}%
+                              </span>
+                            )}
+                            {voucher.discountAmount && voucher.discountAmount > 0 && (
+                              <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium rounded-md whitespace-nowrap">
+                                {voucher.discountPercentage && voucher.discountPercentage > 0 
+                                  ? `tối đa ${voucher.discountAmount.toLocaleString()} ₫`
+                                  : `-${voucher.discountAmount.toLocaleString()} ₫`}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {voucher.description && (
                           <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-1">
