@@ -3,7 +3,7 @@
     { "source": "/pay-done", "destination": "/index.html" },
     { "source": "/payment/cancel", "destination": "/index.html" },
     { 
-      "source": "/((?!.*\\..*).*)", 
+      "source": "/((?!static|.*\\..*|manifest.json|favicon.ico|logo.*\\.png|robots.txt).*)", 
       "destination": "/index.html" 
     }
   ],

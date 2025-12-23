@@ -533,24 +533,29 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
     
     let voucherDiscount = 0;
     
+    // Check if voucher has both discountPercentage and discountAmount
+    const hasPercentage = voucher.discountPercentage !== undefined && voucher.discountPercentage !== null && voucher.discountPercentage > 0;
+    const hasAmount = voucher.discountAmount !== undefined && voucher.discountAmount !== null && voucher.discountAmount > 0;
+    const discountPercentage = voucher.discountPercentage || 0;
+    const discountAmount = voucher.discountAmount || 0;
+    
     // Case 1: Có cả discountPercentage và discountAmount
     // discountAmount là giới hạn tối đa cho discount theo phần trăm
-    if (voucher.discountPercentage && voucher.discountPercentage > 0 && 
-        voucher.discountAmount && voucher.discountAmount > 0) {
+    if (hasPercentage && hasAmount) {
       // Tính discount theo phần trăm
-      voucherDiscount = price * (voucher.discountPercentage / 100);
+      voucherDiscount = price * (discountPercentage / 100);
       // Áp dụng giới hạn tối đa (discountAmount)
-      voucherDiscount = Math.min(voucherDiscount, voucher.discountAmount);
+      voucherDiscount = Math.min(voucherDiscount, discountAmount);
     }
     // Case 2: Chỉ có discountPercentage
-    else if (voucher.discountPercentage && voucher.discountPercentage > 0) {
+    else if (hasPercentage) {
       // Giảm theo phần trăm
-      voucherDiscount = price * (voucher.discountPercentage / 100);
+      voucherDiscount = price * (discountPercentage / 100);
     }
     // Case 3: Chỉ có discountAmount
-    else if (voucher.discountAmount && voucher.discountAmount > 0) {
+    else if (hasAmount) {
       // Giảm số tiền cố định
-      voucherDiscount = voucher.discountAmount;
+      voucherDiscount = discountAmount;
     }
     
     // Áp dụng discount vào giá
