@@ -1,5 +1,5 @@
 ﻿import { PencilSquareIcon } from "@heroicons/react/24/outline";
-import React, { FC, Fragment, useState, useEffect } from "react";
+import React, { FC, Fragment, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Input from "shared/Input/Input";
 import ButtonPrimary from "shared/Button/ButtonPrimary";
@@ -61,6 +61,9 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
   const [selectedServicePackages, setSelectedServicePackages] = useState<Set<number>>(new Set()); // serviceId set (checkbox - không có số lượng)
   const [condotelDetail, setCondotelDetail] = useState<any>(null);
   const [bookingId, setBookingId] = useState<number | null>(null);
+
+  // Track promotion IDs that have already shown warning to prevent duplicate notifications
+  const shownPromotionWarningRef = useRef<Set<number>>(new Set());
 
   // Booking for someone else
   const [bookingForOther, setBookingForOther] = useState(false);
@@ -338,6 +341,10 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
   // Auto-deselect promotion if booking dates fall outside promotion period
   useEffect(() => {
     if (!selectedPromotionId || !rangeDates.startDate || !rangeDates.endDate) {
+      // Clear warning tracking when no promotion is selected
+      if (!selectedPromotionId) {
+        shownPromotionWarningRef.current.clear();
+      }
       return;
     }
 
@@ -355,11 +362,19 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
     const isWithinPromotion = bookingStart >= promoStart && bookingEnd <= promoEnd;
 
     if (!isWithinPromotion) {
-      // Deselect promotion and show warning
+      // Only show warning if we haven't shown it for this promotion yet
+      const promotionId = selectedPromo.promotionId;
+      if (!shownPromotionWarningRef.current.has(promotionId)) {
+        shownPromotionWarningRef.current.add(promotionId);
+        toastWarning(
+          `Ngày đặt phòng nằm ngoài khoảng khuyến mãi (${moment(promoStart).format("DD/MM/YYYY")} - ${moment(promoEnd).format("DD/MM/YYYY")}). Khuyến mãi đã được hủy bỏ.`
+        );
+      }
+      // Deselect promotion
       setSelectedPromotionId(null);
-      toastWarning(
-        `Ngày đặt phòng nằm ngoài khoảng khuyến mãi (${moment(promoStart).format("DD/MM/YYYY")} - ${moment(promoEnd).format("DD/MM/YYYY")}). Khuyến mãi đã được hủy bỏ.`
-      );
+    } else {
+      // If promotion is valid, remove it from warning tracking (in case dates change back)
+      shownPromotionWarningRef.current.delete(selectedPromo.promotionId);
     }
   }, [rangeDates, selectedPromotionId, promotions]);
 
