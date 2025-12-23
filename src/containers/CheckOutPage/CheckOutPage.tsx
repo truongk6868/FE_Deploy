@@ -526,20 +526,36 @@ const CheckOutPage: FC<CheckOutPageProps> = ({ className = "" }) => {
     voucher: VoucherDTO | null
   ): number => {
     // Step 1: Apply promotion first
-    let priceAfterPromotion = calculatePriceWithPromotion(basePrice, promotion);
+    let price = calculatePriceWithPromotion(basePrice, promotion);
     
     // Step 2: Apply voucher discount (after promotion)
-    if (!voucher) return priceAfterPromotion;
+    if (!voucher) return price;
     
-    if (voucher.discountPercentage) {
-      return Math.max(0, priceAfterPromotion * (1 - voucher.discountPercentage / 100));
+    let voucherDiscount = 0;
+    
+    // Case 1: Có cả discountPercentage và discountAmount
+    // discountAmount là giới hạn tối đa cho discount theo phần trăm
+    if (voucher.discountPercentage && voucher.discountPercentage > 0 && 
+        voucher.discountAmount && voucher.discountAmount > 0) {
+      // Tính discount theo phần trăm
+      voucherDiscount = price * (voucher.discountPercentage / 100);
+      // Áp dụng giới hạn tối đa (discountAmount)
+      voucherDiscount = Math.min(voucherDiscount, voucher.discountAmount);
+    }
+    // Case 2: Chỉ có discountPercentage
+    else if (voucher.discountPercentage && voucher.discountPercentage > 0) {
+      // Giảm theo phần trăm
+      voucherDiscount = price * (voucher.discountPercentage / 100);
+    }
+    // Case 3: Chỉ có discountAmount
+    else if (voucher.discountAmount && voucher.discountAmount > 0) {
+      // Giảm số tiền cố định
+      voucherDiscount = voucher.discountAmount;
     }
     
-    if (voucher.discountAmount) {
-      return Math.max(0, priceAfterPromotion - voucher.discountAmount);
-    }
-    
-    return priceAfterPromotion;
+    // Áp dụng discount vào giá
+    price -= voucherDiscount;
+    return Math.max(0, price); // Đảm bảo giá không âm
   };
 
   // Calculate service packages total (mỗi service chỉ tính 1 lần vì dùng checkbox)
