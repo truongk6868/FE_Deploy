@@ -29,52 +29,63 @@ const PaymentCancelPage: FC<PaymentCancelPageProps> = ({ className = "" }) => {
 
   useEffect(() => {
     const fetchBooking = async () => {
-      if (!bookingId) {
-        setLoading(false);
-        return;
-      }
-
-      // Wait for auth to finish loading with timeout
-      if (isLoading) {
-        return;
-      }
-
-      // If not authenticated after auth loading finished, still show the page
-      if (!isAuthenticated || !user) {
-        setLoading(false);
-        // Don't block the page - just show without booking details
-        return;
-      }
-
       try {
-        const bookingData = await bookingAPI.getBookingById(parseInt(bookingId));
-        
-        // SECURITY CHECK: Verify user owns this booking
+        if (!bookingId) {
+          setLoading(false);
+          return;
+        }
+
+        // Wait for auth to finish loading with timeout
+        if (isLoading) {
+          return;
+        }
+
+        // If not authenticated after auth loading finished, still show the page
+        if (!isAuthenticated || !user) {
+          setLoading(false);
+          // Don't block the page - just show without booking details
+          return;
+        }
+
         try {
-          validateBookingOwnership(bookingData, user);
-          setBooking(bookingData);
-          setUnauthorized(false);
-        } catch (securityError: any) {
-          setError(securityError.message || "Bạn không có quyền truy cập booking này");
-          setUnauthorized(true);
-          setBooking(null);
+          const bookingData = await bookingAPI.getBookingById(parseInt(bookingId));
+          
+          // SECURITY CHECK: Verify user owns this booking
+          try {
+            validateBookingOwnership(bookingData, user);
+            setBooking(bookingData);
+            setUnauthorized(false);
+            setError(null);
+          } catch (securityError: any) {
+            setError(securityError.message || "Bạn không có quyền truy cập booking này");
+            setUnauthorized(true);
+            setBooking(null);
+          }
+        } catch (err: any) {
+          if (err.response?.status === 403 || err.response?.status === 401) {
+            setError("Bạn không có quyền truy cập booking này");
+            setUnauthorized(true);
+          } else if (err.response?.status === 404) {
+            setError("Không tìm thấy booking này");
+          } else {
+            // Don't set error for network issues - just show page without booking details
+            console.error("Error fetching booking:", err);
+            setError(null);
+            setUnauthorized(false);
+          }
+        } finally {
+          setLoading(false);
         }
-      } catch (err: any) {
-        if (err.response?.status === 403 || err.response?.status === 401) {
-          setError("Bạn không có quyền truy cập booking này");
-          setUnauthorized(true);
-        } else if (err.response?.status === 404) {
-          setError("Không tìm thấy booking này");
-        } else {
-          setError("Không thể tải thông tin booking. Vui lòng thử lại sau.");
-        }
-      } finally {
+      } catch (error) {
+        // Catch any unexpected errors
+        console.error("Unexpected error in fetchBooking:", error);
         setLoading(false);
+        setError(null);
       }
     };
 
     fetchBooking();
-  }, [bookingId, user, isAuthenticated, isLoading, navigate]);
+  }, [bookingId, user, isAuthenticated, isLoading]);
 
   const handleRetryPayment = () => {
     if (bookingId) {
@@ -85,58 +96,63 @@ const PaymentCancelPage: FC<PaymentCancelPageProps> = ({ className = "" }) => {
   };
 
   const renderContent = () => {
-    // Show loading if auth is still initializing or booking is loading
-    if (isLoading || loading) {
-      return (
-        <div className="w-full flex flex-col items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-6000 mb-4"></div>
-          <p className="text-neutral-600 dark:text-neutral-400">
-            {isLoading ? "Đang kiểm tra đăng nhập..." : "Đang tải thông tin..."}
-          </p>
-        </div>
-      );
-    }
-
-    // Show error if unauthorized or error occurred
-    if (error || unauthorized) {
-      return (
-        <div className="w-full flex flex-col items-center justify-center py-12 space-y-4">
-          <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-            <svg
-              className="w-10 h-10 text-red-600 dark:text-red-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400">
-            {unauthorized ? "Không có quyền truy cập" : "Lỗi"}
-          </h2>
-          <p className="text-neutral-600 dark:text-neutral-400 max-w-md text-center">
-            {error || "Bạn không có quyền truy cập booking này"}
-          </p>
-          {unauthorized && (
-            <p className="text-sm text-neutral-500 dark:text-neutral-500">
-              Đang chuyển về trang chủ...
+    try {
+      // Show loading if auth is still initializing or booking is loading
+      if (isLoading || loading) {
+        return (
+          <div className="w-full flex flex-col items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-6000 mb-4"></div>
+            <p className="text-neutral-600 dark:text-neutral-400">
+              {isLoading ? "Đang kiểm tra đăng nhập..." : "Đang tải thông tin..."}
             </p>
-          )}
-          <div className="flex gap-4 mt-4">
-            <ButtonSecondary onClick={() => navigate("/my-bookings")}>
-              Xem booking của tôi
-            </ButtonSecondary>
-            <ButtonSecondary onClick={() => navigate("/")}>
-              Về trang chủ
-            </ButtonSecondary>
           </div>
-        </div>
-      );
+        );
+      }
+
+      // Show error if unauthorized or error occurred (only if we have a specific error)
+      if (error && unauthorized) {
+        return (
+          <div className="w-full flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+              <svg
+                className="w-10 h-10 text-red-600 dark:text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400">
+              {unauthorized ? "Không có quyền truy cập" : "Lỗi"}
+            </h2>
+            <p className="text-neutral-600 dark:text-neutral-400 max-w-md text-center">
+              {error || "Bạn không có quyền truy cập booking này"}
+            </p>
+            {unauthorized && (
+              <p className="text-sm text-neutral-500 dark:text-neutral-500">
+                Đang chuyển về trang chủ...
+              </p>
+            )}
+            <div className="flex gap-4 mt-4">
+              <ButtonSecondary onClick={() => navigate("/my-bookings")}>
+                Xem booking của tôi
+              </ButtonSecondary>
+              <ButtonSecondary onClick={() => navigate("/")}>
+                Về trang chủ
+              </ButtonSecondary>
+            </div>
+          </div>
+        );
+      }
+    } catch (renderError) {
+      // Fallback if render fails
+      console.error("Error rendering content:", renderError);
     }
 
     return (
@@ -257,10 +273,57 @@ const PaymentCancelPage: FC<PaymentCancelPageProps> = ({ className = "" }) => {
     );
   };
 
+  // Ensure component always renders something
+  let content;
+  try {
+    content = renderContent();
+  } catch (error) {
+    console.error("Error in PaymentCancelPage render:", error);
+    // Fallback UI if render fails
+    content = (
+      <div className="w-full flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+          <svg
+            className="w-10 h-10 text-red-600 dark:text-red-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </div>
+        <h2 className="text-3xl lg:text-4xl font-semibold text-red-600 dark:text-red-400">
+          Thanh toán thất bại
+        </h2>
+        <p className="text-neutral-600 dark:text-neutral-400 max-w-md text-center">
+          Giao dịch thanh toán của bạn đã bị hủy. Vui lòng thử lại hoặc liên hệ hỗ trợ nếu vấn đề vẫn tiếp tục.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          {bookingId && (
+            <ButtonPrimary onClick={handleRetryPayment} className="flex-1">
+              Thử thanh toán lại
+            </ButtonPrimary>
+          )}
+          <ButtonSecondary onClick={() => navigate("/my-bookings")} className="flex-1">
+            Xem booking của tôi
+          </ButtonSecondary>
+          <ButtonSecondary onClick={() => navigate("/")} className="flex-1">
+            Về trang chủ
+          </ButtonSecondary>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`nc-PaymentCancelPage ${className}`} data-nc-id="PaymentCancelPage">
       <main className="container mt-11 mb-24 lg:mb-32">
-        <div className="max-w-4xl mx-auto">{renderContent()}</div>
+        <div className="max-w-4xl mx-auto">{content}</div>
       </main>
     </div>
   );
